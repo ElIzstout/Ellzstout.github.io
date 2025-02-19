@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Web Serial Scanner</title>
+    <script>
+        let socket = new WebSocket("ws://localhost:8080");
+        let port;
+        let reader;
+        let regexPattern = /Order-(\d+)/;
+        let baseURL = "https://example.com/order/{order}";
+
+        socket.onopen = () => console.log("Connected to WebSocket");
+        socket.onmessage = (event) => console.log("From server:", event.data);
+        var scannedOrders=["test"];
+        async function connectSerial() {
+            
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 9600 });
+                reader = port.readable.getReader();
+                let decoder = new TextDecoder();
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    let scannedData = decoder.decode(value).trim();
+                    console.log("Scanned Data:", scannedData);
+
+                    let match = scannedData.normalize();
+                    if (true) {
+                        let orderNumber = match;//[1];
+                        let orderURL = baseURL.replace("{order}", orderNumber);
+                        console.log(orderNumber);
+                        console.log("Final Order URL:", orderURL);
+                        document.getElementById("orderFrame").src = orderURL;
+                        // Display in UI
+                        let list = document.getElementById("orderList");
+                        let li = document.createElement("li");
+                        li.textContent = orderNumber;
+                        list.prepend(li);
+
+                        // Send order to WebSocket server
+                        socket.send(JSON.stringify({ order: orderNumber }));
+                    }
+                }
+            } catch (error) {
+                console.error("Serial Error:", error);
+            }
+        }
+
+        function saveSettings() {
+            baseURL = document.getElementById("baseURL").value;
+            regexPattern = new RegExp(document.getElementById("regexPattern").value);
+            alert("Settings updated!");
+        }
+        function updatelist(text){
+            document.getElementById("prev").innerHTML = text[0]; 
+            console.log(text);
+        }
+    </script>
+</head>
+<body>
+    <h3>Scanned Orders</h3>
+    <ul id="orderList"></ul>
+
+    <h3>Base URL</h3>
+    <input type="text" id="baseURL" value="https://example.com/order/{order}">
+    
+    <h3>Regex Selector</h3>
+    <input type="text" id="regexPattern" value="/s:(.*)/">
+    
+    <button onclick="saveSettings()">Save</button>
+    <button onclick="connectSerial()">Connect to Scanner</button>
+    <iframe id="orderFrame" width="100%" height="500px" style="border: 1px solid #ccc;"></iframe>
+    <P id="prev"></P>
+</body>
+</html>
