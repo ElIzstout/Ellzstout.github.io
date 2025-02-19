@@ -27,7 +27,7 @@
                     let scannedData = decoder.decode(value).trim();
                     console.log("Scanned Data:", scannedData);
 
-                    let match = scannedData.normalize();
+                    let match = scannedData.replace("s:","");
                     if (true) {
                         let orderNumber = match;//[1];
                         let orderURL = baseURL.replace("{order}", orderNumber);
